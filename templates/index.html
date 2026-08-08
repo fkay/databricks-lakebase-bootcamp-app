@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Support Tickets</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 960px;
+      margin: 40px auto;
+      color: #222;
+    }
+
+    .grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .panel {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Support Tickets</h1>
+  <p class="muted">Create tickets, read their message thread, and update status from one place.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Tickets</h2>
+        <div style="display: flex; gap: 8px;">
+          <select id="filter-status" style="width: auto; margin: 0;">
+            <option value="">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+          <select id="filter-category" style="width: auto; margin: 0;">
+            <option value="">All Categories</option>
+            <option value="software">Software</option>
+            <option value="hardware">Hardware</option>
+            <option value="network">Network</option>
+            <option value="access_security">Access & Security</option>
+            <option value="infrastructure">Infrastructure</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Customer</th>
+          </tr>
+        </thead>
+        <tbody id="ticket-list"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Create a ticket</h2>
+      <form id="ticket-form">
+        <input id="title" placeholder="Title" required />
+        <input id="created_by" placeholder="Customer name" required />
+        <select id="category" required>
+          <option value="software">Software</option>
+          <option value="hardware">Hardware</option>
+          <option value="network">Network</option>
+          <option value="access_security">Access & Security</option>
+          <option value="infrastructure">Infrastructure</option>
+        </select>
+        <button type="submit">Create ticket</button>
+      </form>
+      <div id="form-status" class="muted" style="margin-top: 8px;"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:24px;">
+    <h2>Ticket details</h2>
+    <div id="detail-status" class="muted">Select a ticket to view its history.</div>
+    <div id="detail-content"></div>
+  </div>
+
+  <script>
+    const ticketList = document.getElementById('ticket-list');
+    const form = document.getElementById('ticket-form');
+    const formStatus = document.getElementById('form-status');
+    const detailStatus = document.getElementById('detail-status');
+    const detailContent = document.getElementById('detail-content');
+
+    const filterStatus = document.getElementById('filter-status');
+    const filterCategory = document.getElementById('filter-category');
+
+    filterStatus.addEventListener('change', loadTickets);
+    filterCategory.addEventListener('change', loadTickets);
+
+    async function loadTickets() {
+      const response = await fetch('/tickets');
+      const allTickets = await response.json();
+
+      const statusVal = filterStatus.value;
+      const categoryVal = filterCategory.value;
+
+      const tickets = allTickets.filter(t =>
+        (statusVal === '' || t.status === statusVal) &&
+        (categoryVal === '' || t.category === categoryVal)
+      );
+
+      ticketList.innerHTML = '';
+      tickets.forEach((ticket) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${ticket.ticket_id}</td><td><a href="#" data-id="${ticket.ticket_id}">${ticket.title}</a></td><td>${ticket.status}</td><td>${ticket.created_by}</td>`;
+        ticketList.appendChild(row);
+      });
+      ticketList.querySelectorAll('a').forEach((link) => link.addEventListener('click', (event) => {
+        event.preventDefault();
+        loadTicketDetail(Number(event.target.dataset.id));
+      }));
+    }
+
+    async function loadTicketDetail(id) {
+      const response = await fetch(`/tickets/${id}`);
+      const ticket = await response.json();
+      detailStatus.innerHTML = `Ticket #${ticket.ticket_id} · ${ticket.status}`;
+      detailContent.innerHTML = `
+        <p><strong>Customer:</strong> ${ticket.created_by}</p>
+        <p><strong>Category:</strong> ${ticket.category}</p>
+        <label>Status</label>
+        <select id="status-select">
+          <option value="open" ${ticket.status === 'open' ? 'selected' : ''}>Open</option>
+          <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>In progress</option>
+          <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+          <option value="closed" ${ticket.status === 'closed' ? 'selected' : ''}>Closed</option>
+        </select>
+        <button id="status-button" type="button">Update status</button>
+        <h3>Messages</h3>
+        <ul>${ticket.messages.map((message) => `<li><strong>${message.author}</strong>: ${message.message_text}</li>`).join('')}</ul>
+        <h3>Add a message</h3>
+        <input id="message-author" placeholder="Author" />
+        <textarea id="message-content" placeholder="Write a message"></textarea>
+        <button id="message-button" type="button">Add message</button>
+      `;
+      document.getElementById('status-button').addEventListener('click', async () => {
+        const status = document.getElementById('status-select').value;
+        await fetch(`/tickets/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        loadTicketDetail(id);
+        loadTickets();
+      });
+      document.getElementById('message-button').addEventListener('click', async () => {
+        const author = document.getElementById('message-author').value;
+        const message_text = document.getElementById('message-content').value;
+        await fetch(`/tickets/${id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message_text, author }) });
+        loadTicketDetail(id);
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        title: document.getElementById('title').value,
+        created_by: document.getElementById('created_by').value,
+        category: document.getElementById('category').value,
+      };
+      const response = await fetch('/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await response.json();
+      formStatus.textContent = response.ok ? `Created ticket #${data.ticket_id}` : JSON.stringify(data);
+      form.reset();
+      loadTickets();
+      if (response.ok) {
+        loadTicketDetail(data.ticket_id);
+      }
+    });
+
+    loadTickets();
+  </script>
+</body>
+
+</html>
