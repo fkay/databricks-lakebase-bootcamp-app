@@ -7,5 +7,3 @@ env:
     value: "database"
   - name: LAKEBASE_SECRET_KEY
     value: "lakebase-url"
-  - name: LAKEBASE_URL
-    value: ""

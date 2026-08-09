@@ -3,62 +3,62 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Support Tickets</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 960px;
-      margin: 40px auto;
-      color: #222;
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 500;
+      display: inline-block;
     }
-
-    .grid {
-      display: grid;
-      gap: 24px;
-      grid-template-columns: 1.1fr 0.9fr;
-    }
-
-    .panel {
+    .status-open { background-color: #ff9800; color: white; }
+    .status-in_progress { background-color: #ffc107; color: #333; }
+    .status-resolved { background-color: #4caf50; color: white; }
+    .status-closed { background-color: #f44336; color: white; }
+    
+    #filter-status, #filter-category {
+      background-color: white;
+      color: #333;
       border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 16px;
+      padding: 6px 12px;
+      border-radius: 4px;
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
+    
+    .stats-container {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
     }
-
-    th,
-    td {
-      text-align: left;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
+    
+    .stat-card {
+      background: #1e1e1e;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      flex: 1;
+      min-width: 150px;
+      border: 1px solid #333;
     }
-
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-      padding: 8px;
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 8px;
+    
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 4px;
     }
-
-    button {
-      cursor: pointer;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-    }
-
-    .muted {
-      color: #666;
-      font-size: 0.9rem;
+    
+    .stat-label {
+      font-size: 0.9em;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   </style>
 </head>
@@ -66,6 +66,29 @@
 <body>
   <h1>Support Tickets</h1>
   <p class="muted">Create tickets, read their message thread, and update status from one place.</p>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">0</div>
+      <div class="stat-label">Total Tickets</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-open">0</div>
+      <div class="stat-label">Open</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-in-progress">0</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-resolved-pct">0%</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-in-progress-pct">0%</div>
+      <div class="stat-label">In Progress %</div>
+    </div>
+  </div>
 
   <div class="grid">
     <div class="panel">
@@ -96,6 +119,7 @@
             <th>Title</th>
             <th>Status</th>
             <th>Customer</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody id="ticket-list"></tbody>
@@ -139,9 +163,46 @@
     filterStatus.addEventListener('change', loadTickets);
     filterCategory.addEventListener('change', loadTickets);
 
+    function getStatusBadge(status) {
+      const statusText = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      return `<span class="status-badge status-${status}">${statusText}</span>`;
+    }
+
+    function updateStatistics(allTickets) {
+      const total = allTickets.length;
+      const open = allTickets.filter(t => t.status === 'open').length;
+      const inProgress = allTickets.filter(t => t.status === 'in_progress').length;
+      const resolved = allTickets.filter(t => t.status === 'resolved').length;
+      
+      const resolvedPct = total > 0 ? ((resolved / total) * 100).toFixed(1) : 0;
+      const inProgressPct = total > 0 ? ((inProgress / total) * 100).toFixed(1) : 0;
+      
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-open').textContent = open;
+      document.getElementById('stat-in-progress').textContent = inProgress;
+      document.getElementById('stat-resolved-pct').textContent = resolvedPct + '%';
+      document.getElementById('stat-in-progress-pct').textContent = inProgressPct + '%';
+    }
+
+    function confirmDeleteMessage(ticket_id, message_id) {
+      if (confirm('Are you sure you want to delete this message?')) {
+        fetch(`/tickets/${ticket_id}/messages/${message_id}`, { method: 'DELETE' })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              loadTicketDetail(ticket_id);
+            } else {
+              alert(data.error || 'Error deleting message.');
+            }
+          });
+      }
+    }
+
     async function loadTickets() {
       const response = await fetch('/tickets');
       const allTickets = await response.json();
+
+      updateStatistics(allTickets);
 
       const statusVal = filterStatus.value;
       const categoryVal = filterCategory.value;
@@ -154,7 +215,8 @@
       ticketList.innerHTML = '';
       tickets.forEach((ticket) => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${ticket.ticket_id}</td><td><a href="#" data-id="${ticket.ticket_id}">${ticket.title}</a></td><td>${ticket.status}</td><td>${ticket.created_by}</td>`;
+        const createdDate = new Date(ticket.created_at).toLocaleString();
+        row.innerHTML = `<td>${ticket.ticket_id}</td><td><a href="#" data-id="${ticket.ticket_id}">${ticket.title}</a></td><td>${getStatusBadge(ticket.status)}</td><td>${ticket.created_by}</td><td>${createdDate}</td>`;
         ticketList.appendChild(row);
       });
       ticketList.querySelectorAll('a').forEach((link) => link.addEventListener('click', (event) => {
@@ -166,8 +228,11 @@
     async function loadTicketDetail(id) {
       const response = await fetch(`/tickets/${id}`);
       const ticket = await response.json();
-      detailStatus.innerHTML = `Ticket #${ticket.ticket_id} · ${ticket.status}`;
+      detailStatus.innerHTML = `Ticket #${ticket.ticket_id} · ${getStatusBadge(ticket.status)}`;
+      const ticketCreatedDate = new Date(ticket.created_at).toLocaleString();
       detailContent.innerHTML = `
+        <p><strong>Title:</strong> ${ticket.title}</p>
+        <p><strong>Created:</strong> ${ticketCreatedDate}</p>
         <p><strong>Customer:</strong> ${ticket.created_by}</p>
         <p><strong>Category:</strong> ${ticket.category}</p>
         <label>Status</label>
@@ -179,7 +244,10 @@
         </select>
         <button id="status-button" type="button">Update status</button>
         <h3>Messages</h3>
-        <ul>${ticket.messages.map((message) => `<li><strong>${message.author}</strong>: ${message.message_text}</li>`).join('')}</ul>
+        <ul>${ticket.messages.map((message) => {
+          const msgDate = new Date(message.created_at).toLocaleString();
+          return `<li class="d-flex justify-content-between"><strong>${message.author}</strong> (${msgDate}): ${message.message_text} <button class='btn btn-danger btn-sm w-25' onclick='confirmDeleteMessage(${ticket.ticket_id}, ${message.message_id})'>Delete</button></li>`;
+        }).join('')}</ul>
         <h3>Add a message</h3>
         <input id="message-author" placeholder="Author" />
         <textarea id="message-content" placeholder="Write a message"></textarea>
@@ -218,6 +286,9 @@
 
     loadTickets();
   </script>
+  
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

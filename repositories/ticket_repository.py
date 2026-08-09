@@ -55,3 +55,12 @@ class TicketRepository:
             session.commit()
             session.refresh(managed_tkt)
             return managed_tkt
+
+    def delete_message(self, message_id: int) -> bool:
+        with self._session() as session:
+            message = session.get(TicketMessage, message_id)
+            if message is None:
+                return False
+            session.delete(message)
+            session.commit()
+            return True

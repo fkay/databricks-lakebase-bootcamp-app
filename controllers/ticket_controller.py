@@ -101,3 +101,11 @@ def update_ticket_status(ticket_id: int):
 
     payload = TicketResponse.model_validate(ticket).model_dump(mode="json")
     return jsonify(payload)
+
+
+@bp.route("/tickets/<int:ticket_id>/messages/<int:message_id>", methods=["DELETE"])
+def delete_message(ticket_id: int, message_id: int):
+    success = service.delete_message(message_id)
+    if not success:
+        return jsonify({"error": "message not found"}), 404
+    return jsonify({"success": True}), 200

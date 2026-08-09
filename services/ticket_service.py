@@ -46,3 +46,6 @@ class TicketService:
             raise ValueError("ticket not found")
         ticket.status = status
         return self.repository.update_ticket(ticket)
+
+    def delete_message(self, message_id: int) -> bool:
+        return self.repository.delete_message(message_id)
