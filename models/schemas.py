@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class TicketCreateRequest(BaseModel):
     title: str = Field(min_length=1)
     created_by: str = Field(min_length=1)
-    category: Literal["hardware", "software", "network", "access_security", "infrastructure"] = "software"
+    category: Literal["hardware", "software", "network",
+                      "access_security", "infrastructure"] = "software"
 
 
 class TicketMessageCreateRequest(BaseModel):
@@ -45,3 +46,21 @@ class TicketDetailResponse(TicketResponse):
     model_config = ConfigDict(from_attributes=True)
 
     messages: list[TicketMessageResponse]
+
+
+class CityCreateRequest(BaseModel):
+    name: str = Field(min_length=1)
+    state: str = Field(min_length=2)
+    created_by: str = Field(min_length=1)
+
+
+class CityResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    city_id: int
+    name: str
+    state: str
+    latitude: float
+    longitude: float
+    created_by: str
+    created_at: datetime

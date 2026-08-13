@@ -35,9 +35,10 @@ class Ticket(Base):
     status: Mapped[str] = mapped_column(String(30),
                                         nullable=False,
                                         default=TicketStatus.OPEN.value)
-    category: Mapped[str] = mapped_column(String(50),
-                                          nullable=False,
-                                          default=TicketCategory.SOFTWARE.value)
+    category: Mapped[str] = mapped_column(
+                                    String(50),
+                                    nullable=False,
+                                    default=TicketCategory.SOFTWARE.value)
     created_by: Mapped[str] = mapped_column(String(200),
                                             nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),

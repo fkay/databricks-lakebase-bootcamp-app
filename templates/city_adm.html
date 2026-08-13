@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cities</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+  <h1>Manage Cities</h1>
+  <p class="muted">Add cities for fetching alerts and forecasts in pipeline</p>
+
+  <div class="grid">
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Cities</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>State</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="city-list"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Add a city</h2>
+      <form id="city-form">
+        <input id="name" placeholder="Name" required />
+        <select id="state" required>
+          <option value="MO">Minnesota</option>
+          <option value="NY">New York</option>
+          <option value="CA">California</option>
+          <option value="DC">Washington DC</option>
+        </select>
+        <input id="created_by" placeholder="Create By" required />
+        <button type="submit">Add city</button>
+      </form>
+      <div id="form-status" class="muted" style="margin-top: 8px;"></div>
+    </div>
+  </div>
+
+  <script>
+    const cityList = document.getElementById('city-list');
+    const stateOption = document.getElementById('state');
+    const form = document.getElementById('city-form');
+    const formStatus = document.getElementById('form-status');
+
+
+    function confirmDeleteCity(city_id) {
+      if (confirm('Are you sure you want to delete this city?')) {
+        fetch(`/weather/cities/${city_id}`, { method: 'DELETE' })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              loadCities();
+            } else {
+              alert(data.error || 'Error deleting city.');
+            }
+          });
+      }
+    }
+
+    async function loadStates() {
+        const response = await fetch('/weather/states');
+        const allStates = await response.json();
+
+        stateOption.innerHTML = '';
+        allStates.forEach((state) => {
+            const newOption = document.createElement('option');
+            newOption.value = state.split("-")[1];
+            newOption.textContent = state.split("-")[0];
+
+            stateOption.appendChild(newOption);
+        })
+
+    }
+
+    async function loadCities() {
+      const response = await fetch('/weather/cities');
+      const allCities = await response.json();
+
+      cityList.innerHTML = '';
+      allCities.forEach((city) => {
+        const row = document.createElement('tr');
+        const createdDate = new Date(city.created_at).toLocaleString();
+        row.innerHTML = `<td>${city.city_id}</td>
+                         <td>${city.name}</td>
+                         <td>${city.state}</td>
+                         <td>${city.latitude}</td>
+                         <td>${city.longitude}</td>
+                         <td>${createdDate}</td>
+                         <td><button class='btn btn-danger btn-sm' onclick='confirmDeleteCity(${city.city_id})'>Delete</button></td>`;
+        cityList.appendChild(row);
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        name: document.getElementById('name').value,
+        state: document.getElementById('state').value,
+        created_by: document.getElementById('created_by').value
+      };
+      const response = await fetch('/weather/cities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await response.json();
+      formStatus.textContent = response.ok ? `Added city #${data.city_id}` : JSON.stringify(data);
+      form.reset();
+      loadCities();
+    });
+
+    loadCities();
+    loadStates();
+  </script>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

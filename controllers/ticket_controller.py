@@ -9,27 +9,11 @@ from models.schemas import (TicketCreateRequest, TicketDetailResponse,
                             TicketStatusUpdateRequest)
 from repositories.ticket_repository import TicketRepository
 from services.ticket_service import TicketService
+from controllers.validation_error_response import validation_error_response
 
 bp = Blueprint("tickets", __name__)
 service = TicketService(repository=TicketRepository(
                                     session_factory=get_session_factory()))
-
-
-def _validation_error_response(exc: ValidationError, *,
-                               error_type: str = "validation_error",
-                               status_code: int = 422):
-    details = []
-    for error in exc.errors(include_url=False):
-        loc = ".".join(str(part) for part in error.get("loc", ("body",)))
-        details.append({
-            "field": loc or "body",
-            "message": error.get("msg", "Invalid value"),
-        })
-
-    return jsonify({
-        "error": error_type,
-        "details": details,
-    }), status_code
 
 
 @bp.route("/tickets", methods=["GET"])
@@ -46,7 +30,7 @@ def create_ticket():
         payload = TicketCreateRequest.model_validate(
                                 request.get_json(silent=True) or {})
     except ValidationError as exc:
-        return _validation_error_response(exc, status_code=422)
+        return validation_error_response(exc, status_code=422)
 
     ticket = service.create_ticket(title=payload.title,
                                    created_by=payload.created_by,
@@ -71,7 +55,7 @@ def add_message(ticket_id: int):
         payload = TicketMessageCreateRequest.model_validate(
                                 request.get_json(silent=True) or {})
     except ValidationError as exc:
-        return _validation_error_response(exc, status_code=422)
+        return validation_error_response(exc, status_code=422)
 
     try:
         message = service.add_message(ticket_id,
@@ -92,7 +76,7 @@ def update_ticket_status(ticket_id: int):
         payload = TicketStatusUpdateRequest.model_validate(
                         request.get_json(silent=True) or {})
     except ValidationError as exc:
-        return _validation_error_response(exc, status_code=422)
+        return validation_error_response(exc, status_code=422)
 
     try:
         ticket = service.update_status(ticket_id, payload.status)
@@ -103,7 +87,8 @@ def update_ticket_status(ticket_id: int):
     return jsonify(payload)
 
 
-@bp.route("/tickets/<int:ticket_id>/messages/<int:message_id>", methods=["DELETE"])
+@bp.route("/tickets/<int:ticket_id>/messages/<int:message_id>",
+          methods=["DELETE"])
 def delete_message(ticket_id: int, message_id: int):
     success = service.delete_message(message_id)
     if not success:

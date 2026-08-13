@@ -18,3 +18,13 @@ CREATE TABLE IF NOT EXISTS tickets_app.ticket_messages (
     CONSTRAINT fk_ticket_messages_ticket
         FOREIGN KEY (ticket_id) REFERENCES tickets_app.tickets(ticket_id)
 );
+
+CREATE TABLE IF NOT EXISTS tickets_app.cities (
+    city_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    state CHAR(2) NOT NULL,
+    latitude NUMERIC(7,4),
+    longitude NUMERIC(7,4),
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

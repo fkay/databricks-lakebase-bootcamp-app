@@ -3,8 +3,9 @@
 import logging
 import os
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_from_directory
 from controllers.ticket_controller import bp as ticket_bp
+from controllers.weather_controller import bp as weather_bp
 
 load_dotenv()
 
@@ -13,6 +14,7 @@ logger = logging.getLogger("support-tickets-app")
 
 app = Flask(__name__)
 app.register_blueprint(ticket_bp)
+app.register_blueprint(weather_bp)
 
 
 @app.route("/healthz")
@@ -23,6 +25,20 @@ def healthz():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/city")
+def city_managment():
+    return render_template("city_adm.html")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        app.static_folder,
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon"
+    )
 
 
 @app.errorhandler(Exception)
