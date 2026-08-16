@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
 from repositories.city_repository import CityRepository
-from repositories.reverse_geocode_repository import ReverseGeocodeRepository
+from repositories.geopy_repository import GeopyRepository
 from models.schemas import (CityResponse, CityCreateRequest)
 from services.weather_service import WeatherService
 from infrastructure.database import get_session_factory
@@ -11,7 +11,7 @@ from controllers.validation_error_response import validation_error_response
 bp = Blueprint("weather", __name__)
 service = WeatherService(
     city_repository=CityRepository(session_factory=get_session_factory()),
-    rev_geo_repository=ReverseGeocodeRepository()
+    geo_repository=GeopyRepository()
     )
 
 

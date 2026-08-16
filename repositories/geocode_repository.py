@@ -1,20 +1,7 @@
-"""
-Using geocode.xyz to retrieve lat, long from city and state.
-This is a free service, but it has a limit of 1 request per second.
-If you exceed this limit, you will receive a 403 error.
-"""
-
-# import http.client
-import requests
-import os
-import json
-from dotenv import load_dotenv
-
-load_dotenv()
+from abc import ABC, abstractmethod
 
 
-class ReverseGeocodeRepository:
-
+class GeocodeRepository(ABC):
     _us_states_to_abbr = {
         "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
         "California": "CA", "Colorado": "CO", "Connecticut": "CT",
@@ -34,10 +21,6 @@ class ReverseGeocodeRepository:
         "Wisconsin": "WI", "Wyoming": "WY", "District of Columbia": "DC"
     }
 
-    def __init__(self):
-        self.api_url = 'https://geocode.xyz'
-        self.api_key = os.environ.get('GEOCODE_XYZ_API_KEY')
-
     @classmethod
     def get_abbr_state(cls, state: str) -> str:
         return (state if len(state) == 2
@@ -47,6 +30,7 @@ class ReverseGeocodeRepository:
     def get_state_list(cls) -> list[str]:
         return [f"{k}-{v}" for k, v in cls._us_states_to_abbr.items()]
 
+    @abstractmethod
     def get_lat_long(self, city: str, state: str) -> dict:
         """
         Get lat, long from geocode.xyz based on city name and state.
@@ -59,26 +43,6 @@ class ReverseGeocodeRepository:
 
         Returns:
             dict: latitude (float), longitude (float)
-                  or empty dict if not found
+                    or empty dict if not found
         """
-        state_abbr = self.get_abbr_state(state)
-
-        with requests.Session() as session:
-            params = {
-                'auth': self.api_key,
-                'locate': f"{city}, {state_abbr}",
-                'region': 'NorthAmerica',
-                'json': 1,
-                }
-
-            response = session.get(self.api_url, params=params)
-
-        if response.status_code != 200:
-            return {}
-
-        result = json.loads(response.text.encode('utf-8'))
-
-        lat = float(result.get("latt"))
-        long = float(result.get("longt"))
-
-        return {"latitude": lat, "longitude": long} if lat and long else {}
+        pass

@@ -1,10 +1,13 @@
+from decimal import Decimal
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from services.weather_service import WeatherService
 from repositories.city_repository import CityRepository
-from repositories.reverse_geocode_repository import ReverseGeocodeRepository
+# from repositories.geocode_xyz_repository import GeocodeXYZRepository
+from repositories.geopy_repository import GeopyRepository
 from models.base import Base
 
 
@@ -14,9 +17,10 @@ def service() -> WeatherService:
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     city_repository = CityRepository(session_factory=SessionLocal)
-    reverse_geocode_repository = ReverseGeocodeRepository()
+    # geocode_repository = GeocodeXYZRepository()
+    geocode_repository = GeopyRepository()
     return WeatherService(city_repository=city_repository,
-                          rev_geo_repository=reverse_geocode_repository)
+                          geo_repository=geocode_repository)
 
 
 def test_weather_lifecycle(service: WeatherService) -> None:
@@ -30,5 +34,5 @@ def test_weather_lifecycle(service: WeatherService) -> None:
     assert city.state == "MO"
     assert city.latitude is not None
     assert city.longitude is not None
-    assert isinstance(city.latitude, float)
-    assert isinstance(city.longitude, float)
+    assert isinstance(city.latitude, Decimal)
+    assert isinstance(city.longitude, Decimal)
