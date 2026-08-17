@@ -1,16 +1,17 @@
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
-from repositories.city_repository import CityRepository
+from repositories.db_weather_repository import DBWeatherRepository
 from repositories.geopy_repository import GeopyRepository
-from models.schemas import (CityResponse, CityCreateRequest)
+from models.schemas import (CityListRequest, CityResponse, CityCreateRequest)
 from services.weather_service import WeatherService
 from infrastructure.database import get_session_factory
 from controllers.validation_error_response import validation_error_response
 
 bp = Blueprint("weather", __name__)
 service = WeatherService(
-    city_repository=CityRepository(session_factory=get_session_factory()),
+    db_weather_repository=DBWeatherRepository(
+                    session_factory=get_session_factory()),
     geo_repository=GeopyRepository()
     )
 
@@ -52,3 +53,16 @@ def delete_city(city_id: int):
     if not success:
         return jsonify({"error": "city not found"}), 404
     return jsonify({"success": True}), 200
+
+
+@bp.route("/weather/sync", methods=["POST"])
+def sync_weather_docs():
+    try:
+        payload = CityListRequest.model_validate(
+            request.get_json(silent=True) or {}
+        )
+    except ValidationError as exc:
+        return validation_error_response(exc, status_code=422)
+
+    synced_docs = service.sync_weather_docs(payload.city_list)
+    return jsonify({"Docs synced": synced_docs}), 200

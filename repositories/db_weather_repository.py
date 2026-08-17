@@ -4,11 +4,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models.city import City
+from models.weather_doc import WeatherDoc
 
 SessionFactory = Callable[[], Session]
 
 
-class CityRepository:
+class DBWeatherRepository:
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
 
@@ -40,3 +41,14 @@ class CityRepository:
             session.delete(message)
             session.commit()
             return True
+
+    def get_weather_doc(self, weather_doc_id: str) -> WeatherDoc:
+        with self._session() as session:
+            return session.get(WeatherDoc, weather_doc_id)
+
+    def add_weather_doc(self, weather_doc: WeatherDoc) -> WeatherDoc:
+        with self._session() as session:
+            weather_doc_merged = session.merge(weather_doc)
+            session.commit()
+            session.refresh(weather_doc_merged)
+            return weather_doc_merged

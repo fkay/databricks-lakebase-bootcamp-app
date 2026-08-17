@@ -64,3 +64,12 @@ class CityResponse(BaseModel):
     longitude: float
     created_by: str
     created_at: datetime
+
+
+class CitySyncRequest(BaseModel):
+    name: str = Field(min_length=1)
+    state: str = Field(min_length=2)
+
+
+class CityListRequest(BaseModel):
+    city_list: list[CitySyncRequest] = Field(default_factory=list)

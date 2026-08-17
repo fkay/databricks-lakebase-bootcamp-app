@@ -28,3 +28,15 @@ CREATE TABLE IF NOT EXISTS tickets_app.cities (
     created_by TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS tickets_app.weather_docs (
+    weather_id TEXT PRIMARY KEY,
+    location TEXT NOT NULL,
+    source_type TEXT NOT NULL DEFAULT 'forecast',
+    headline TEXT,
+    narrative_text TEXT NOT NULL,
+    event_date TIMESTAMPTZ NOT NULL,
+    payload TEXT NOT NULL,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
