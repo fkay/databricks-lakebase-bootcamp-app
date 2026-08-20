@@ -6,12 +6,12 @@ import getpass
 
 w = WorkspaceClient()
 
-w.secrets.create_scope(scope="database")
-w.secrets.put_secret(
-    scope="database",
-    key="lakebase-url",
-    string_value=getpass.getpass("Paste your Lakebase URL: "),
-)
+# w.secrets.create_scope(scope="database")
+# w.secrets.put_secret(
+#     scope="database",
+#     key="lakebase-url",
+#     string_value=getpass.getpass("Paste your Lakebase URL: "),
+# )
 
 # w.secrets.put_secret(
 #     scope="database",
@@ -19,14 +19,14 @@ w.secrets.put_secret(
 #     string_value=getpass.getpass("Paste your geocode.xyz API key: "),
 # )
 
-w.secrets.put_secret(
-    scope="database",
-    key="geopy-app-name",
-    string_value=getpass.getpass("Paste your geocode.xyz API key: "),
-)
+# w.secrets.put_secret(
+#     scope="database",
+#     key="geopy-app-name",
+#     string_value=getpass.getpass("Paste your geopy APP name: "),
+# )
 
-w.secrets.put_acl(
-    scope="database",
-    principal="users",
-    permission=workspace.AclPermission.READ,
-)
+# w.secrets.put_acl(
+#     scope="database",
+#     principal="users",
+#     permission=workspace.AclPermission.READ,
+# )

@@ -64,7 +64,7 @@ class WeatherService:
                             f":{forecast['start_time']}"),
                 location=f"{city.name}-{city.state}",
                 source_type=WeatherSourceType.FORECAST,
-                headline=forecast["forecast"],
+                headline=forecast["short_forecast"],
                 narrative_text=forecast["forecast"],
                 event_date=datetime.fromisoformat(forecast["start_time"]),
                 payload=json.dumps(forecast["payload"])
@@ -113,9 +113,9 @@ class WeatherService:
             for weather_doc in self.get_forecast_city(city):
                 self.db_weather_repository.add_weather_doc(weather_doc)
                 docs_synced += 1
-                sleep(1000)     # maintain api on rate limit
+                sleep(1)     # maintain api on rate limit
             for weather_doc in self.get_alert_city(city):
                 self.db_weather_repository.add_weather_doc(weather_doc)
                 docs_synced += 1
-                sleep(1000)     # maintain api on rate limit
+                sleep(1)     # maintain api on rate limit
         return docs_synced

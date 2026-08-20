@@ -55,7 +55,7 @@ def delete_city(city_id: int):
     return jsonify({"success": True}), 200
 
 
-@bp.route("/weather/sync", methods=["POST"])
+@bp.route("/api/weather/sync", methods=["POST"])
 def sync_weather_docs():
     try:
         payload = CityListRequest.model_validate(

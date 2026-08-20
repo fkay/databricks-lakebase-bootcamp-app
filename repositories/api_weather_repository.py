@@ -62,10 +62,12 @@ class APIWeatherRepository():
         forecasts = []
         for period in periods:
             name = period.get("name")
+            short_forecast = period.get("shortForecast")
             detailed_forecast = period.get("detailedForecast")
             start = period.get("startTime")
             end = period.get("endTime")
             forecasts.append({"name": name,
+                              "short_forecast": short_forecast,
                               "forecast": detailed_forecast,
                               "start_time": start,
                               "end_time": end,
